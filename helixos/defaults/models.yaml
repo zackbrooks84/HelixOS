@@ -1,0 +1,6 @@
+roles:
+  coding: deepseek-coder:14b
+  security: qwen2.5-coder:7b
+  creative: gemma2:9b
+  research: qwen2.5:7b
+  default: qwen2.5:7b
