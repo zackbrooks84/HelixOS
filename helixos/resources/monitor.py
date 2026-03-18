@@ -2,7 +2,29 @@
 
 from __future__ import annotations
 
-import psutil
+from types import SimpleNamespace
+
+try:
+    import psutil
+except ModuleNotFoundError:  # pragma: no cover - environment-dependent fallback
+    def _missing_virtual_memory() -> SimpleNamespace:
+        """Raise a clear error when psutil is unavailable.
+
+        Inputs:
+            None.
+
+        Outputs:
+            This function does not return successfully.
+
+        Failure modes:
+            Raises ``ModuleNotFoundError`` describing the missing dependency.
+        """
+
+        raise ModuleNotFoundError(
+            "psutil is required for ResourceMonitor RAM inspection."
+        )
+
+    psutil = SimpleNamespace(virtual_memory=_missing_virtual_memory)
 
 
 class ResourceMonitor:
