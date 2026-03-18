@@ -1,0 +1,2 @@
+input: 'Review my authentication code'
+expected_verdict_options: ['pass', 'warn', 'halt']
