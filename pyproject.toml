@@ -1,19 +1,28 @@
 [build-system]
-requires = ['setuptools']
-build-backend = 'setuptools.build_meta'
+requires = ["setuptools==75.8.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = 'helixos'
-version = '0.1.0'
-requires-python = '>=3.11'
-dependencies = ['pydantic>=2.0', 'chromadb>=0.4.0', 'httpx>=0.27.0', 'instructor>=1.0.0', 'openai>=1.0.0', 'psutil>=5.9.0', 'click>=8.0.0', 'gradio>=4.0.0']
+name = "helixos"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+  "click==8.1.8",
+  "chromadb==0.5.23",
+  "gradio==5.23.1",
+  "httpx==0.28.1",
+  "instructor==1.7.9",
+  "openai==1.68.2",
+  "psutil==7.0.0",
+  "pydantic==2.10.6",
+]
 
 [project.optional-dependencies]
-dev = ['pytest>=7.0', 'pytest-mock>=3.0']
-gpu = ['pynvml>=11.0.0']
+dev = ["pytest>=7.0", "pytest-mock>=3.0"]
+gpu = ["pynvml>=11.0.0"]
 
 [tool.setuptools.package-data]
-helixos = ['defaults/*.yaml']
+helixos = ["defaults/*.yaml"]
 
 [project.scripts]
-helixos = 'helixos.cli:cli'
+helixos = "helixos.cli:cli"
