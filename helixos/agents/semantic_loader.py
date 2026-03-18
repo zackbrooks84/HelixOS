@@ -138,7 +138,10 @@ class SemanticSkillDiscovery:
             fails for a discovered skill.
             Propagates ChromaDB errors if upserting fails.
         """
-        for subfolder in sorted(path for path in self.skills_dir.rglob("*") if path.is_dir()):
+        skill_dirs = sorted(
+            path for path in self.skills_dir.rglob("*") if path.is_dir()
+        )
+        for subfolder in skill_dirs:
             system_prompt_path = subfolder / "system_prompt.md"
             if not system_prompt_path.is_file():
                 continue
@@ -146,16 +149,40 @@ class SemanticSkillDiscovery:
             system_prompt = system_prompt_path.read_text(encoding="utf-8")
             embedding = self._embed_text(system_prompt)
             tools_yaml_path = subfolder / "tools.yaml"
-            metadata = {
-                "system_prompt": system_prompt,
-                "tools_yaml": str(tools_yaml_path) if tools_yaml_path.is_file() else None,
-            }
+            metadata = self._sanitize_metadata(
+                {
+                    "system_prompt": system_prompt,
+                    "tools_yaml": (
+                        str(tools_yaml_path) if tools_yaml_path.is_file() else None
+                    ),
+                }
+            )
             self.collection.upsert(
                 ids=[subfolder.name],
                 embeddings=[embedding],
                 metadatas=[metadata],
                 documents=[system_prompt],
             )
+
+    def _sanitize_metadata(self, metadata: dict[str, Any]) -> dict[str, Any]:
+        """Remove unsupported Chroma metadata values before persistence.
+
+        Inputs:
+            metadata: Metadata dictionary assembled for a skill record.
+
+        Outputs:
+            A new dictionary containing only Chroma-compatible values of type
+            ``str``, ``int``, ``float``, or ``bool``.
+
+        Failure modes:
+            None. Unsupported keys are dropped instead of raising.
+        """
+        allowed_types = (str, int, float, bool)
+        return {
+            key: value
+            for key, value in metadata.items()
+            if isinstance(value, allowed_types)
+        }
 
     def _embed_text(self, text: str) -> list[float]:
         """Generate an embedding from Ollama's nomic-embed-text model.
