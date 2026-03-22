@@ -8,7 +8,6 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
   "click==8.1.8",
-  "chromadb==0.5.23",
   "gradio==5.23.1",
   "httpx==0.28.1",
   "instructor==1.7.9",
@@ -21,6 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-mock>=3.0"]
 gpu = ["pynvml>=11.0.0"]
+semantic = ["chromadb==0.5.23"]
 
 [tool.setuptools.package-data]
 helixos = ["defaults/*.yaml"]

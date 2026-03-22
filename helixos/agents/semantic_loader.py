@@ -5,8 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import chromadb
 import httpx
+
+try:
+    import chromadb
+    _CHROMADB_AVAILABLE = True
+except ImportError:
+    chromadb = None  # type: ignore[assignment]
+    _CHROMADB_AVAILABLE = False
 
 
 class SemanticSkillDiscovery:
@@ -45,6 +51,12 @@ class SemanticSkillDiscovery:
         if not self.skills_dir.exists():
             raise FileNotFoundError(
                 f"Skills directory does not exist: {self.skills_dir}"
+            )
+
+        if not _CHROMADB_AVAILABLE:
+            raise ImportError(
+                "chromadb is not installed. Install it with: "
+                "pip install 'helixos[semantic]'  or  pip install chromadb"
             )
 
         self.min_distance = min_distance
