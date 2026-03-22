@@ -8,6 +8,7 @@ from helixos.exceptions import ObserverHaltException
 from helixos.orchestrator.structured import StructuredOutputEnforcer
 from helixos.pydantic_models.critic import CriticVerdict
 from helixos.pydantic_models.handoff import HandoffPayload
+from helixos.workflow import HelixWorkflow, WorkflowState, WorkflowStep
 
 
 def _handle_verdict(verdict: CriticVerdict) -> None:
@@ -79,3 +80,35 @@ def run(task: str) -> str:
     _handle_verdict(verdict_2)
 
     return handoff_2.task_summary
+
+
+def run_v2(task: str) -> WorkflowState:
+    """Run the frontend builder recipe chain via the LangGraph workflow engine.
+
+    Inputs:
+        task: User task to route through frontend implementation and code
+            review.
+
+    Outputs:
+        A ``WorkflowState`` containing all executed step records, the final
+        task summary, and halt information if applicable.
+
+    Failure modes:
+        Returns a halted ``WorkflowState`` instead of raising
+        ``ObserverHaltException``. Propagates agent loading and structured
+        output enforcement errors.
+    """
+    workflow = HelixWorkflow(
+        steps=[
+            WorkflowStep(
+                agent_path="agents/core/frontend_builder.md",
+                name="frontend_builder",
+            ),
+            WorkflowStep(
+                agent_path="agents/core/code_reviewer.md",
+                name="code_reviewer",
+            ),
+        ],
+        critic_skills_dir="agents/core/critics",
+    )
+    return workflow.run(task)
