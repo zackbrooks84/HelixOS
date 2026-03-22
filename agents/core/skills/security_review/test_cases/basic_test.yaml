@@ -1,0 +1,2 @@
+input: 'Audit this authentication module for OWASP Top 10 vulnerabilities'
+expected_verdict_options: ['pass', 'warn', 'halt']

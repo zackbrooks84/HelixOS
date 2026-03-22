@@ -35,7 +35,8 @@ def run(task: str) -> str:
     """Run the research report recipe chain.
 
     Inputs:
-        task: User task to route through research and orchestration.
+        task: User task to route through the research and automation
+            orchestration chain.
 
     Outputs:
         The final task summary returned by the Automation Orchestrator handoff.

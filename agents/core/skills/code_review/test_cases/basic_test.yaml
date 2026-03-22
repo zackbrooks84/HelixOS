@@ -1,0 +1,2 @@
+input: 'Review this Python function for correctness and test coverage'
+expected_verdict_options: ['pass', 'warn', 'halt']
