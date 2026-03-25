@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import importlib
+import json
 import shutil
 import subprocess
 from pathlib import Path
 
-import chromadb
 import click
 
 from helixos.exceptions import ObserverHaltException
@@ -68,6 +68,8 @@ def init(with_sandbox: bool) -> None:
                 shutil.copy2(item, destination)
 
     try:
+        import chromadb
+
         client = chromadb.PersistentClient(path=str(chroma_dir))
         client.get_or_create_collection(name="helixos_skills")
         click.echo("ChromaDB initialized at ~/.helixos/chroma/ [OK]")
@@ -103,10 +105,24 @@ def init(with_sandbox: bool) -> None:
     click.echo("  helixos init --with-sandbox")
 
     if with_sandbox:
+        docker_available = shutil.which("docker") is not None
+        sandbox_config = helixos_root / "sandbox.json"
+        sandbox_config.write_text(
+            json.dumps(
+                {
+                    "provider": "docker",
+                    "enabled": docker_available,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
         click.echo("")
-        click.echo("Docker sandbox: Install Docker Desktop, then re-run")
-        click.echo("helixos init --with-sandbox to enable full isolation.")
-        click.echo("(Full Docker integration ships in Phase 2.)")
+        if docker_available:
+            click.echo("Docker sandbox configured and enabled.")
+        else:
+            click.echo("Docker sandbox requested, but Docker is not installed.")
+            click.echo("Install Docker Desktop, then re-run helixos init --with-sandbox.")
 
 
 @cli.command()

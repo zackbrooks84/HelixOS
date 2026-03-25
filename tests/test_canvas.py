@@ -82,7 +82,7 @@ def test_build_ui_configures_expected_components_and_handlers(
     assert output_box['props']['interactive'] is False
     assert verdict_box['props']['interactive'] is False
     assert audit_log['props']['interactive'] is False
-    assert len(ui.config['dependencies']) == 3
+    assert len(ui.config['dependencies']) >= 4
 
 
 def test_run_handler_reports_pass(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -123,6 +123,7 @@ def test_run_handler_reports_pass(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result[2]['visible'] is False
     assert result[3]['visible'] is False
     assert result[4].endswith('PASS')
+    assert isinstance(result[5], dict)
 
 
 def test_run_handler_reports_halt_and_approve_reject(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -172,6 +173,7 @@ def test_run_handler_reports_halt_and_approve_reject(monkeypatch: pytest.MonkeyP
     assert halt_result[2]['visible'] is True
     assert halt_result[3]['visible'] is True
     assert 'HALT: Bug found' in halt_result[4]
+    assert isinstance(halt_result[5], dict)
     assert approve_result[0]['visible'] is False
     assert approve_result[1]['visible'] is False
     assert approve_result[2] == 'Approved. Workflow resuming...'

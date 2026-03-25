@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import subprocess
+import sys
 
 import pytest
 from click.testing import CliRunner
@@ -16,7 +17,9 @@ def runner() -> CliRunner:
 
 
 @pytest.fixture()
-def mock_init_dependencies(mocker: pytest.MockFixture) -> None:
+def mock_init_dependencies(
+    mocker: pytest.MockFixture, request: pytest.FixtureRequest
+) -> None:
     """Mock filesystem and Chroma dependencies for init command tests."""
     mocker.patch("helixos.cli.shutil.copy2")
     mocker.patch("helixos.cli.shutil.copytree")
@@ -25,7 +28,14 @@ def mock_init_dependencies(mocker: pytest.MockFixture) -> None:
     collection = mocker.Mock()
     client = mocker.Mock()
     client.get_or_create_collection.return_value = collection
-    mocker.patch("helixos.cli.chromadb.PersistentClient", return_value=client)
+    chromadb_module = mocker.Mock()
+    chromadb_module.PersistentClient.return_value = client
+    original_chromadb = sys.modules.get("chromadb")
+    sys.modules["chromadb"] = chromadb_module
+    if original_chromadb is None:
+        request.addfinalizer(lambda: sys.modules.pop("chromadb", None))
+    else:
+        request.addfinalizer(lambda: sys.modules.__setitem__("chromadb", original_chromadb))
 
 
 
@@ -73,21 +83,51 @@ def test_init_handles_ollama_not_running(
 
 
 def test_init_chroma_failure_exits_with_error(
-    runner: CliRunner, mocker: pytest.MockFixture
+    runner: CliRunner, mocker: pytest.MockFixture, request: pytest.FixtureRequest
 ) -> None:
     """Init should stop immediately when ChromaDB initialization fails."""
     mocker.patch("helixos.cli.Path.home", return_value=Path("/tmp/test-home"))
     mocker.patch("helixos.cli.Path.mkdir")
     mocker.patch("helixos.cli.Path.exists", return_value=False)
     mocker.patch("helixos.cli.shutil.copy2")
-    mocker.patch(
-        "helixos.cli.chromadb.PersistentClient", side_effect=Exception("disk error")
-    )
+    chromadb_module = mocker.Mock()
+    chromadb_module.PersistentClient.side_effect = Exception("disk error")
+    original_chromadb = sys.modules.get("chromadb")
+    sys.modules["chromadb"] = chromadb_module
+    if original_chromadb is None:
+        request.addfinalizer(lambda: sys.modules.pop("chromadb", None))
+    else:
+        request.addfinalizer(lambda: sys.modules.__setitem__("chromadb", original_chromadb))
 
     result = runner.invoke(cli, ["init"])
 
     assert result.exit_code == 1
     assert "ERROR: ChromaDB failed to initialize" in result.output
+
+
+def test_init_with_sandbox_writes_docker_config(
+    runner: CliRunner, mocker: pytest.MockFixture, mock_init_dependencies: None
+) -> None:
+    """Init --with-sandbox should persist Docker sandbox configuration."""
+    mocker.patch("helixos.cli.subprocess.run", side_effect=FileNotFoundError())
+    mocker.patch("helixos.cli.Path.mkdir")
+    mocker.patch("helixos.cli.shutil.which", return_value="/usr/bin/docker")
+
+    opened: dict[str, str] = {}
+
+    def _capture_write(self: Path, data: str, encoding: str = "utf-8") -> int:
+        opened[str(self)] = data
+        return len(data)
+
+    mocker.patch("helixos.cli.Path.write_text", autospec=True, side_effect=_capture_write)
+
+    result = runner.invoke(cli, ["init", "--with-sandbox"])
+
+    assert result.exit_code == 0
+    written = opened.get("/tmp/test-home/.helixos/sandbox.json")
+    assert written is not None
+    assert '"provider": "docker"' in written
+    assert '"enabled": true' in written.lower()
 
 
 
